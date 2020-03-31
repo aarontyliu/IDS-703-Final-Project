@@ -1,0 +1,32 @@
+---
+title: "Final Project"
+author: "Altamash Rafiq"
+date: "3/31/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, message = FALSE, warning = FALSE, comment = NA)
+library(tidyverse)
+library(tidytext)
+library(rvest)
+```
+
+```{r}
+ted = read_csv('ted_main.csv')
+transcripts = read_csv('transcripts.csv')
+
+ted[['url']] = ted[['url']] %>% str_trim()
+transcripts[['url']] = transcripts[['url']] %>% str_trim()
+
+ted_full = left_join(ted, transcripts, by = 'url')
+ted_full %>% write.csv('ted_full.csv', row.names = FALSE)
+```
+
+```{r}
+ted_full
+ted = read_csv('ted_full.csv')
+
+ted[['transcript']][1]
+```
+
