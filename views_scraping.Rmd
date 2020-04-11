@@ -1,0 +1,114 @@
+---
+title: "Scraping Ted Talk Views"
+author: "Altamash Rafiq"
+date: "4/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE, comment = NA)
+library(tidyverse)
+library(rvest)
+```
+
+```{r}
+ted = read_csv("data/ted_main.csv")
+urls = ted %>% pull(url) %>% str_trim()
+final = tibble('url' = urls, 'views' = NA)
+```
+
+```{r}
+#### Function to scrape views ####
+parser_function = function(df){
+  for (i in seq_along(urls)){
+    url = urls[i]
+    page = tryCatch(read_html(url), error=function(err) NA)
+    
+    if(is.na(page) == FALSE){
+      views = page %>%
+        html_nodes("div span") %>%
+        html_text()
+      views = views[4] %>% 
+        str_replace('views', "") %>% 
+        str_trim()
+      
+      df[["views"]][i] = views
+    }
+    else{
+      df[["views"]][i] = NA
+    }
+  }
+  return(df)
+}
+
+ted_views = parser_function(final)
+ted_views[['views']][970] = NA
+ted_views[['views']] = ted_views[['views']] %>% parse_number()
+```
+
+```{r}
+miss = ted_views %>% filter(is.na(views) == TRUE)
+#### Function to scrape views ####
+parser_function = function(df){
+  urls = df[['url']]
+  for (i in seq_along(urls)){
+    url = urls[i]
+    page = tryCatch(read_html(url), error=function(err) NA)
+    
+    if(is.na(page) == FALSE){
+      views = page %>%
+        html_nodes("div span") %>%
+        html_text()
+      views = views[5] %>% 
+        str_replace('views', "") %>% 
+        str_trim()
+      
+      df[["views"]][i] = views
+    }
+    else{
+      df[["views"]][i] = NA
+    }
+  }
+  return(df)
+}
+
+miss_views = parser_function(miss)
+miss_views[['views']][18] = NA
+miss_views[['views']] = miss_views[['views']] %>% parse_number()
+ted_inter = left_join(ted_views, miss_views, by = 'url')
+ted_inter[['views.x']][which(is.na(ted_inter[['views.x']]) == TRUE)] = 0
+ted_inter[['views.y']][which(is.na(ted_inter[['views.y']]) == TRUE)] = 0
+ted_inter[['views']] = ted_inter[['views.x']] + ted_inter[['views.y']]
+ted_inter = ted_inter %>% select(url, views)
+ted_inter[['views']][which(ted_inter[['views']] == 0)] = NA
+```
+
+```{r}
+miss = ted_inter %>% filter(is.na(views) == TRUE)
+remaining_views = c(755883, NA, 1033834, 762089, NA, 1404472, NA, 10594943, NA, 773327, 932520, 1047416, 307990)
+miss[['views']] = remaining_views
+ted_inter = left_join(ted_inter, miss, by = 'url')
+ted_inter[['views.x']][which(is.na(ted_inter[['views.x']]) == TRUE)] = 0
+ted_inter[['views.y']][which(is.na(ted_inter[['views.y']]) == TRUE)] = 0
+ted_inter[['views']] = ted_inter[['views.x']] + ted_inter[['views.y']]
+ted_inter = ted_inter %>% select(url, views)
+ted_inter[['views']][which(ted_inter[['views']] == 0)] = NA
+```
+
+```{r}
+ted = read_csv("data/ted_full.csv")
+ted_views = read_csv("data/ted_views.csv")
+names(ted_views) = c('url', 'view_2020')
+ted = left_join(ted, ted_views, by = 'url')
+```
+
+
+
+
+
+
+
+
+
+
+
